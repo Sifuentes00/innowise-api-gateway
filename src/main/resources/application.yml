@@ -5,6 +5,8 @@ spring:
   application:
     name: api-gateway
   cloud:
+    discovery:
+      enabled: false
     gateway:
       routes:
         - id: auth-service
