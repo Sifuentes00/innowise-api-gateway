@@ -36,6 +36,7 @@ logs/
 ### Environment & Config ###
 .env
 .env.local
+.env.docker
 .env.*.local
 .env.test
 
