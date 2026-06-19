@@ -33,4 +33,17 @@ public class UserServiceClient {
                 )
                 .bodyToMono(Void.class);
     }
+
+    public Mono<Void> deleteUser(UUID userId) {
+        WebClient webClient = webClientBuilder.build();
+        return webClient.delete()
+                .uri(userServiceUrl + "/internal/users/" + userId)
+                .retrieve()
+                .onStatus(
+                        status -> !status.is2xxSuccessful(),
+                        response -> response.bodyToMono(String.class)
+                                .flatMap(body -> Mono.error(new RuntimeException("Failed to delete user: " + body)))
+                )
+                .bodyToMono(Void.class);
+    }
 }

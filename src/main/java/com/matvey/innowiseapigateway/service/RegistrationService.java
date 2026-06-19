@@ -43,7 +43,8 @@ public class RegistrationService {
                 .onErrorMap(error -> new AuthServiceException("Failed to login after registration: " + error.getMessage(), error))
                 .onErrorResume(error -> {
                     log.error("Registration failed for email: {}, rolling back", request.getEmail(), error);
-                    return authServiceClient.deleteCredentials(userId)
+                    return userServiceClient.deleteUser(userId)
+                            .then(authServiceClient.deleteCredentials(userId))
                             .then(Mono.error(new RegistrationException("Registration failed for email: " + request.getEmail(), error)));
                 });
     }
@@ -69,7 +70,8 @@ public class RegistrationService {
                 .onErrorMap(error -> new AuthServiceException("Failed to login after registration: " + error.getMessage(), error))
                 .onErrorResume(error -> {
                     log.error("Admin registration failed for email: {}, rolling back", request.getEmail(), error);
-                    return authServiceClient.deleteCredentials(userId)
+                    return userServiceClient.deleteUser(userId)
+                            .then(authServiceClient.deleteCredentials(userId))
                             .then(Mono.error(new RegistrationException("Admin registration failed for email: " + request.getEmail(), error)));
                 });
     }
