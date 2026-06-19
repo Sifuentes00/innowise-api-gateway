@@ -4,6 +4,9 @@ import com.matvey.innowiseapigateway.dto.AdminRegisterRequest;
 import com.matvey.innowiseapigateway.dto.AuthResponse;
 import com.matvey.innowiseapigateway.dto.RegisterRequest;
 import com.matvey.innowiseapigateway.dto.UserCreateRequest;
+import com.matvey.innowiseapigateway.exception.AuthServiceException;
+import com.matvey.innowiseapigateway.exception.RegistrationException;
+import com.matvey.innowiseapigateway.exception.UserServiceException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +26,7 @@ public class RegistrationService {
         UUID userId = UUID.randomUUID();
 
         return authServiceClient.createCredentials(userId, request)
+                .onErrorMap(error -> new AuthServiceException("Failed to create credentials in Auth Service: " + error.getMessage(), error))
                 .flatMap(voidResult -> {
                     UserCreateRequest userCreateRequest = UserCreateRequest.builder()
                             .userId(userId)
@@ -34,11 +38,13 @@ public class RegistrationService {
 
                     return userServiceClient.createUser(userCreateRequest);
                 })
+                .onErrorMap(error -> new UserServiceException("Failed to create user in User Service: " + error.getMessage(), error))
                 .flatMap(voidResult -> authServiceClient.login(request.getEmail(), request.getPassword()))
+                .onErrorMap(error -> new AuthServiceException("Failed to login after registration: " + error.getMessage(), error))
                 .onErrorResume(error -> {
                     log.error("Registration failed for email: {}, rolling back", request.getEmail(), error);
                     return authServiceClient.deleteCredentials(userId)
-                            .then(Mono.error(error));
+                            .then(Mono.error(new RegistrationException("Registration failed for email: " + request.getEmail(), error)));
                 });
     }
 
@@ -46,6 +52,7 @@ public class RegistrationService {
         UUID userId = UUID.randomUUID();
 
         return authServiceClient.createAdminCredentials(userId, request)
+                .onErrorMap(error -> new AuthServiceException("Failed to create admin credentials in Auth Service: " + error.getMessage(), error))
                 .flatMap(voidResult -> {
                     UserCreateRequest userCreateRequest = UserCreateRequest.builder()
                             .userId(userId)
@@ -57,11 +64,13 @@ public class RegistrationService {
 
                     return userServiceClient.createUser(userCreateRequest);
                 })
+                .onErrorMap(error -> new UserServiceException("Failed to create user in User Service: " + error.getMessage(), error))
                 .flatMap(voidResult -> authServiceClient.login(request.getEmail(), request.getPassword()))
+                .onErrorMap(error -> new AuthServiceException("Failed to login after registration: " + error.getMessage(), error))
                 .onErrorResume(error -> {
                     log.error("Admin registration failed for email: {}, rolling back", request.getEmail(), error);
                     return authServiceClient.deleteCredentials(userId)
-                            .then(Mono.error(error));
+                            .then(Mono.error(new RegistrationException("Admin registration failed for email: " + request.getEmail(), error)));
                 });
     }
 }
