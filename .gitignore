@@ -37,6 +37,7 @@ logs/
 .env
 .env.local
 .env.docker
+.env.example
 .env.*.local
 .env.test
 
@@ -46,6 +47,7 @@ logs/
 *.sqlite3
 *.sql.gz
 *.dump
+init-db.sh
 
 ### Temporary Files ###
 *.tmp

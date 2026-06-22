@@ -27,7 +27,7 @@ public class RegistrationService {
 
         return authServiceClient.createCredentials(userId, request)
                 .onErrorMap(error -> new AuthServiceException("Failed to create credentials in Auth Service: " + error.getMessage(), error))
-                .flatMap(voidResult -> {
+                .then(Mono.defer(() -> {
                     UserCreateRequest userCreateRequest = UserCreateRequest.builder()
                             .userId(userId)
                             .name(request.getName())
@@ -37,15 +37,15 @@ public class RegistrationService {
                             .build();
 
                     return userServiceClient.createUser(userCreateRequest);
-                })
+                }))
                 .onErrorMap(error -> new UserServiceException("Failed to create user in User Service: " + error.getMessage(), error))
-                .flatMap(voidResult -> authServiceClient.login(request.getEmail(), request.getPassword()))
+                .then(Mono.defer(() -> authServiceClient.login(request.getEmail(), request.getPassword())))
                 .onErrorMap(error -> new AuthServiceException("Failed to login after registration: " + error.getMessage(), error))
-                .onErrorResume(error -> {
+                .doOnError(error -> {
                     log.error("Registration failed for email: {}, rolling back", request.getEmail(), error);
-                    return userServiceClient.deleteUser(userId)
+                    userServiceClient.deleteUser(userId)
                             .then(authServiceClient.deleteCredentials(userId))
-                            .then(Mono.error(new RegistrationException("Registration failed for email: " + request.getEmail(), error)));
+                            .subscribe();
                 });
     }
 
@@ -54,7 +54,7 @@ public class RegistrationService {
 
         return authServiceClient.createAdminCredentials(userId, request)
                 .onErrorMap(error -> new AuthServiceException("Failed to create admin credentials in Auth Service: " + error.getMessage(), error))
-                .flatMap(voidResult -> {
+                .then(Mono.defer(() -> {
                     UserCreateRequest userCreateRequest = UserCreateRequest.builder()
                             .userId(userId)
                             .name(request.getName())
@@ -64,15 +64,15 @@ public class RegistrationService {
                             .build();
 
                     return userServiceClient.createUser(userCreateRequest);
-                })
+                }))
                 .onErrorMap(error -> new UserServiceException("Failed to create user in User Service: " + error.getMessage(), error))
-                .flatMap(voidResult -> authServiceClient.login(request.getEmail(), request.getPassword()))
+                .then(Mono.defer(() -> authServiceClient.login(request.getEmail(), request.getPassword())))
                 .onErrorMap(error -> new AuthServiceException("Failed to login after registration: " + error.getMessage(), error))
-                .onErrorResume(error -> {
+                .doOnError(error -> {
                     log.error("Admin registration failed for email: {}, rolling back", request.getEmail(), error);
-                    return userServiceClient.deleteUser(userId)
+                    userServiceClient.deleteUser(userId)
                             .then(authServiceClient.deleteCredentials(userId))
-                            .then(Mono.error(new RegistrationException("Admin registration failed for email: " + request.getEmail(), error)));
+                            .subscribe();
                 });
     }
 }
