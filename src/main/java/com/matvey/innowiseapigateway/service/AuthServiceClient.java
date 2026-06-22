@@ -80,4 +80,19 @@ public class AuthServiceClient {
                 )
                 .bodyToMono(AuthResponse.class);
     }
+
+    public Mono<AuthResponse> refresh(String refreshToken) {
+        WebClient webClient = webClientBuilder.build();
+        
+        return webClient.post()
+                .uri(authServiceUrl + "/api/auth/refresh")
+                .bodyValue(refreshToken)
+                .retrieve()
+                .onStatus(
+                        status -> status.isError(),
+                        response -> response.bodyToMono(String.class)
+                                .flatMap(body -> Mono.error(new RuntimeException("Failed to refresh: " + body)))
+                )
+                .bodyToMono(AuthResponse.class);
+    }
 }
