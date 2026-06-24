@@ -29,6 +29,7 @@ public class JwtAuthenticationFilter implements WebFilter {
     private static final Set<String> PUBLIC_PATHS = Set.of(
             "/api/auth/login",
             "/api/auth/register",
+            "/api/auth/admin/register",
             "/api/auth/public-key"
     );
 
